@@ -1,0 +1,14 @@
+{
+  "name": "expense_tracker_backend",
+  "version": "1.0.0",
+  "description": "this is the backend of expense tracker ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ravindra gaurav",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
