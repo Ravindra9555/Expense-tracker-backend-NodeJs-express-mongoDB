@@ -1,13 +1,14 @@
-import mongoose from "mongoose";
-const expensesSchema = new mongoose.Schema(
+import mongoose ,{Schema} from "mongoose";
+const expensesSchema = new Schema(
   {
     description: { type: String, required: true },
-    types_of_expense: { type: String, required: true },
     amount: { type: Number, required: true },
     category: { type: String, required: true },
     date: { type: Date, default: Date.now },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    bill_img:{ type: String // cloudnry url
+    }
+   },
   {
     timestamps: true,
   }
