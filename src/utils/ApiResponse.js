@@ -9,4 +9,4 @@ class ApiResponse {
       this.success = statusCode < 400;  // Determine if the response is successful based on the status code
     }
   }
-  
+   export {ApiResponse}
