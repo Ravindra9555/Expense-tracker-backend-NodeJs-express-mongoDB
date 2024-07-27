@@ -1,5 +1,6 @@
  import { Router } from "express";
-import { registerUser ,loginUser } from "../controllers/user.controller.js";
+import { registerUser ,loginUser ,logoutUser,generateRefreshToken } from "../controllers/user.controller.js";
+import { verifyJwt } from "../middlewares/auth.middleware.js";
  
 const router = Router();
 
@@ -7,4 +8,13 @@ const router = Router();
 // router.post('/register', registerUser);
 router.route("/register").post(registerUser);
 router.route("/login").post(loginUser);
+
+//secure routes
+ router.route("/logout").post(verifyJwt,logoutUser);
+ // that wh we use next in the middle ware that my work finish do onther wwork  first run verify then logout 
+
+ // refresh  accessToken  
+  router.route("/verifyAccessToken").post(generateRefreshToken);
+
+ 
 export default router;
