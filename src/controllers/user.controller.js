@@ -4,23 +4,9 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { generateAccessTokenAndRefreshToken } from "../utils/generateToken.js";
+import { sendRegistrationEmail } from "../utils/nodeMailer.js";
 
-// const generateAccessTokenAndRefreshToken = async (userId) => {
-//   try {
-//     const user = await User.findById(userId);
-//     if (!user) throw new ApiError(404, "User not found");
 
-//     const accessToken = user.generateAccessToken();
-//     const refreshToken = user.generateRefreshToken();
-
-//     user.refreshToken = refreshToken;
-//     await user.save({ validateBeforeSave: false });
-
-//     return { accessToken, refreshToken };
-//   } catch (error) {
-//     throw new ApiError(500, "Failed to generate access and refresh tokens");
-//   }
-// };
 
 // Define the registerUser controller function
 const registerUser = asyncHandler(async (req, res) => {
@@ -35,6 +21,14 @@ const registerUser = asyncHandler(async (req, res) => {
   const registeredUser = await User.findOne({ email });
   if (registeredUser) {
     throw new ApiError(400, "Email already exists"); // Throw error if email already exists
+  }
+
+  // Try to send the email before creating the user
+  try {
+    await sendRegistrationEmail(email);
+  } catch (error) {
+    console.error(`Error sending email to ${email}: ${error.message}`);
+    throw new ApiError(500, "Failed to send verification email");
   }
 
   // Create a new user
@@ -54,6 +48,7 @@ const registerUser = asyncHandler(async (req, res) => {
     "User registered successfully",
     createdUser
   );
+
   return res.status(201).json(response);
 });
 
@@ -61,43 +56,45 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    throw new ApiError(400, "Email and password are required");
-  }
 
-  const user = await User.findOne({ email });
-  if (!user) {
-    throw new ApiError(401, "Invalid email or password");
-  }
+   if (!email || !password) {
+     throw new ApiError(400, "Email and password are required");
+   }
+ 
+   const user = await User.findOne({ email });
+   if (!user) {
+     throw new ApiError(401, "Invalid email")
+   }
+ 
+   const isMatch = await user.isPasswordMatch(password);
+   if (!isMatch) {
+     throw new ApiError(401, "Invalid password")
+   }
+ 
+   const { accessToken, refreshToken } =
+     await generateAccessTokenAndRefreshToken(user._id);
+ 
+   const loggedInUser = await User.findById(user._id).select(
+     "-password -refreshToken"
+   );
+ 
+   const options = {
+     httpOnly: true,
+     secure: process.env.NODE_ENV === "production", // Set secure to true in production
+   };
+ 
+   return res
+     .status(200)
+     .cookie("accessToken", accessToken, options)
+     .cookie("refreshToken", refreshToken, options)
+     .json(
+       new ApiResponse(200, "User logged in successfully", {
+         user: loggedInUser,
+         accessToken,
+         refreshToken,
+       })
+     );
 
-  const isMatch = await user.isPasswordMatch(password);
-  if (!isMatch) {
-    throw new ApiError(401, "Invalid email or password");
-  }
-
-  const { accessToken, refreshToken } =
-    await generateAccessTokenAndRefreshToken(user._id);
-
-  const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
-
-  const options = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Set secure to true in production
-  };
-
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-      new ApiResponse(200, "User logged in successfully", {
-        user: loggedInUser,
-        accessToken,
-        refreshToken,
-      })
-    );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {

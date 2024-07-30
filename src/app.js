@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import errorHandler from "./middlewares/errorHandler.js";
 const app = express();
 app.use(
   cors({
@@ -24,13 +25,15 @@ app.use(
 app.use(express.static("public"));
 app.use(cookieParser());
 
-export { app };
-
 // import routes
- import usersRoutes from "./routes/users.routes.js"
- import expesnseRoutes from "./routes/expense.routes.js"
+import usersRoutes from "./routes/users.routes.js";
+import expesnseRoutes from "./routes/expense.routes.js";
 
+// apply routes
+app.use("/api/v1/users", usersRoutes);
+app.use("/api/v1/expenses", expesnseRoutes);
 
- // apply routes
-  app.use("/api/v1/users",usersRoutes);
-  app.use("/api/v1/expenses", expesnseRoutes);
+// Error handling middleware (must be defined after all routes)
+app.use(errorHandler);
+
+export { app };

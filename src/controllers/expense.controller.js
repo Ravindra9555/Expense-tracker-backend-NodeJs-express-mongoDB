@@ -7,15 +7,13 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
  const createExpense = asyncHandler(async(req, res)=>{
    try {
-     console.log(req.body)
+    
       const { userId,month, year, initialAmount, date , amount , name,category,bill_img  }= req.body;
       // validate inputs
       if(!userId ||!month ||!year ||!initialAmount ||!amount ||!name ||!category){
           throw new ApiError( 401 ,"All fields are required");
  
       }
-
-
 
       // handele uplaod file 
        const billImgPath =req.file?.path;
