@@ -6,7 +6,8 @@ const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, index: true },
     password: { type: String, required: [true, 'Password is required'] },
-    refreshToken: { type: String }
+    refreshToken: { type: String , default:null},
+    isVarified: { type: Boolean, default: false}
   },
   { timestamps: true }
 );

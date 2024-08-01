@@ -35,7 +35,33 @@ The Expense Tracker Team`, // plain text body
   // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@ethereal.email>
 }
 
-export { sendRegistrationEmail };
+async function sendOtpMail(email,otp) {
+  // send mail with defined transport object
+  const info = await transporter.sendMail({
+    from: '"Expense Tracker Application" <buiians123@gmail.com>',
+    to: email,
+    subject: "OTP Verification",
+    text: `
+  Hi there,
+  
+  Thank you for registering with Expense Tracker! 🎉
+  
+  To complete your registration, please use the following OTP:
+  
+  ${otp}
+  
+  This OTP is valid for the next 10 minutes. If you didn't request this, please ignore this message.
+  
+  If you need any help, feel free to reach out to our support team.
+  
+  Best regards,  
+  The Expense Tracker Team
+  `,
+  });
 
-//  test function
-// sendRegistrationEmail().catch(console.error);
+  console.log("Message sent: %s", info.messageId);
+  // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@ethereal.email>
+}
+
+
+export { sendRegistrationEmail, sendOtpMail };
