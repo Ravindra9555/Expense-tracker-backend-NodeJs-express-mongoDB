@@ -21,11 +21,6 @@ const registerUser = asyncHandler(async (req, res) => {
   if (registeredUser) {
     throw new ApiError(400, "Email already exists"); // Throw error if email already exists
   }
-
-  // if (registeredUser && registeredUser.isVarified === flase) {
-  //   // throw new ApiError(400, "Email already exists"); // Throw error if email already exists
-  // }
-
   // Create a new user
   const user = await User.create({ email, password });
 
@@ -39,9 +34,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email: user.email,
     otpType: "signup",
     otp: otp,
-   
   });
-
 
   // send mail with defined transport object
   await sendOtpMail(user.email, otp);
@@ -65,14 +58,6 @@ const registerUser = asyncHandler(async (req, res) => {
   return res.status(201).json(response);
 });
 
-// // Try to send the email before creating the user
-// try {
-//   await sendRegistrationEmail(email);
-// } catch (error) {
-//   console.error(`Error sending email to ${email}: ${error.message}`);
-//   throw new ApiError(500, "Failed to send verification email");
-// }
-
 //  / define  Login user
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -90,12 +75,26 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!isMatch) {
     throw new ApiError(401, "Invalid password");
   }
- // Check if the user's email is verified
- console.log('User verification status:', user.isVerified); // Debugging line
+  // Check if the user's email is verified
+  console.log("User verification status:", user.isVerified); // Debugging line
 
- if (user.isVarified  === false) {
-   throw new ApiError(403, "Email not verified");
- }
+  if (!user.isVarified) {
+    // resend otp
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    console.log("Generated OTP: ", otp);
+    const isSend = await OTP.create({
+      email: user.email,
+      otpType: "signup",
+      otp: otp,
+    });
+
+    if (!isSend) {
+      throw new ApiError(500, "Failed to send verification email");
+    }
+    await sendOtpMail(user.email, otp);
+
+    throw new ApiError(403, "Email not verified");
+  }
 
   const { accessToken, refreshToken } =
     await generateAccessTokenAndRefreshToken(user._id);
@@ -106,7 +105,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Set secure to true in production
+    secure: true, // Set secure to true in production
   };
 
   return res

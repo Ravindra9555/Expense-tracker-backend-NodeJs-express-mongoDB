@@ -15,7 +15,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
   const otpData = await OTP.findOne({ email, otp, otpType: "signup" });
 
   if (!otpData || otpData.expiry < new Date()) {
-    throw new ApiError(401, "Invalid  or OTP expired ");
+    throw new ApiError(401, "Invalid OTP  or expired ");
   }
   // find user by user email
   const user = await User.findOne({ email });
