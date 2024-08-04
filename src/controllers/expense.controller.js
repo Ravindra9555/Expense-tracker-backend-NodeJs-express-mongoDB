@@ -6,50 +6,43 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import logger from "../utils/looger.js";
  import moment from "moment/moment.js";
  import mongoose from "mongoose";
-const createExpense = asyncHandler(async (req, res) => {
+ const createExpense = asyncHandler(async (req, res) => {
   try {
     const {
       userId,
       month,
       year,
-      initialAmount,
       date,
       amount,
       name,
       category,
       bill_img,
+      initialAmount, // Default value to 0
     } = req.body;
-    // validate inputs
-    if (
-      !userId ||
-      !month ||
-      !year ||
-      !initialAmount ||
-      !amount ||
-      !name ||
-      !category
-    ) {
+
+    // Validate inputs
+    console.log(req.body);
+    if (!userId || !month || !year || !amount || !name || !category) {
       throw new ApiError(401, "All fields are required");
     }
 
-    // handele uplaod file
+    // Handle upload file
     const billImgPath = req.file?.path;
     let billImgUrl = null;
 
     if (billImgPath) {
-      const uplaodresult = await uploadOnCloudinary(billImgPath);
-      billImgUrl = uplaodresult?.url;
+      const uploadResult = await uploadOnCloudinary(billImgPath);
+      billImgUrl = uploadResult?.url;
     }
 
     // Convert date to ISO format if necessary
     const formattedDate = moment(date, ["YYYY-MM-DD", "DD/MM/YYYY"]).toISOString();
 
-    // create expense
-    // Check if expense for the same user, month, and year already exists
+    // Find or create the expense document
     let expenseDoc = await Expense.findOne({ userId, month, year });
 
     if (!expenseDoc) {
-      // Create new expense document
+      // Create new expense document with initial amount
       expenseDoc = await Expense.create({
         userId,
         month,
@@ -58,34 +51,57 @@ const createExpense = asyncHandler(async (req, res) => {
         expenses: [],
       });
     } else {
-      // Optional: Check if the specific expense already exists in the array
+      // Update the initial amount if provided
+      if (initialAmount > 0) {
+        expenseDoc.initialAmount = initialAmount;
+      }
+
+      // Check if the specific expense already exists in the array
       const expenseExists = expenseDoc.expenses.some(
-        (exp) =>
-          exp.date === date && exp.name === name && exp.category === category
+        (exp) => exp.date === formattedDate && exp.name === name && exp.category === category
       );
       if (expenseExists) {
-        throw new ApiError(
-          401,
-          "Expense with the same details already exists for this month"
-        );
+        throw new ApiError(401, "Expense with the same details already exists for this month");
       }
     }
 
-    //   const expense = await Expense.create({userId,month,year,initialAmount,expenses:[]});
+    // Push new expense to the expenses array
     expenseDoc.expenses.push({
-      date:formattedDate,
+      date: formattedDate,
       amount,
       name,
       category,
       bill_img: billImgUrl,
     });
-  const saveexpense=  await expenseDoc.save();
-    res.status(201).json(new ApiResponse(200, "Expense Craeted SuccesFully ",saveexpense));
+
+    // Save the updated document
+    const savedExpense = await expenseDoc.save();
+
+    res.status(201).json(new ApiResponse(200, "Expense Created Successfully", savedExpense));
+
   } catch (error) {
     logger.error(`Error creating expense: ${error.message}`);
     throw new ApiError(500, "Failed to create expense");
   }
 });
+
+// controller to get initail  ammount of the month 
+ const getinitial = asyncHandler(async(req, res)=>{
+     try {
+       const {userId, month, year}= req.query;
+       if(!userId || !month || !year){
+         throw new ApiError(400, "userId, month and year are required");
+       }
+       const expenseDoc= await Expense.findOne({userId, month, year});
+       if(!expenseDoc){
+         throw new ApiError(404, "No expense found for this month");
+       }
+       res.status(200). json(new ApiResponse(200, "Initial amount retrived succesfully", expenseDoc.initialAmount))                                                 
+      
+     } catch (error) {
+        throw new ApiError(500, "faild to fetch initial amounts");
+     }
+ })
 
  const getExpensesOfMonth = asyncHandler(async(req, res)=>{
    try {
@@ -168,4 +184,4 @@ const createExpense = asyncHandler(async (req, res) => {
   }
 });
 
-export { createExpense,getExpensesOfMonth ,getMonthlyExpensesByYear};
+export { createExpense,getinitial,getExpensesOfMonth ,getMonthlyExpensesByYear};
