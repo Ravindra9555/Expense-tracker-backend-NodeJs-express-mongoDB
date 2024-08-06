@@ -6,6 +6,8 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import logger from "../utils/looger.js";
  import moment from "moment/moment.js";
  import mongoose from "mongoose";
+ import { GoogleGenerativeAI } from "@google/generative-ai";
+
  const createExpense = asyncHandler(async (req, res) => {
   try {
     const {
@@ -84,7 +86,23 @@ import logger from "../utils/looger.js";
     throw new ApiError(500, "Failed to create expense");
   }
 });
+// controller for generate description  
+const generateDescription= asyncHandler(async(req,res)=>{
+const {date,category,amount}=req.body;
+ if(!date || !category || !amount){
+   throw new ApiError(400, "date, category and amount are required");
+ }
+const GenAI=  new GoogleGenerativeAI(process.env.GENAI_TOKEN);
+const modal = GenAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const promt = ` Genearte one line of description for my expense here is my In Rupees ${amount} , Type is '${category}', date is '${date}' , descriptionshould not be more than one line` ; 
 
+ const result = await modal.generateContent(promt);
+ if(result.error){
+   throw new ApiError(500, "Failed to generate description");
+ }
+ res.status(200).json(new ApiResponse(200, "Description generated successfully", result));
+
+})
 // controller to get initail  ammount of the month 
  const getinitial = asyncHandler(async(req, res)=>{
      try {
@@ -122,7 +140,7 @@ import logger from "../utils/looger.js";
 
  const getMonthlyExpensesByYear = asyncHandler(async (req, res, next) => {
   try {
-    const { userId, year } = req.params;
+    const { userId, year } = req.query;
 
     if (!userId || !year) {
       throw new ApiError(400, "userId and year are required");
@@ -184,4 +202,4 @@ import logger from "../utils/looger.js";
   }
 });
 
-export { createExpense,getinitial,getExpensesOfMonth ,getMonthlyExpensesByYear};
+export { createExpense,getinitial,getExpensesOfMonth ,getMonthlyExpensesByYear,generateDescription};
