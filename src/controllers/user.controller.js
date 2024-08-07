@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { generateAccessTokenAndRefreshToken } from "../utils/generateToken.js";
-import { sendOtpMail, sendRegistrationEmail } from "../utils/nodeMailer.js";
+import { sendOtpMail ,sendForgetPasswordMail} from "../utils/nodeMailer.js";
 import { OTP } from "../models/otp.modal.js";
 
 // Define the registerUser controller function
@@ -37,7 +37,11 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   // send mail with defined transport object
-  await sendOtpMail(user.email, otp);
+  const sendmail =await sendOtpMail(user.email, otp);
+
+  if(!sendmail){
+    throw new ApiError(500, "Unable to send OTP ! please try after  some time ! ")
+  }
 
   // Fetch the created user excluding sensitive information
   const createdUser = await User.findById(user._id).select(
@@ -47,7 +51,6 @@ const registerUser = asyncHandler(async (req, res) => {
   if (!createdUser) {
     throw new ApiError(500, "Failed to create user"); // Throw error if user creation fails
   }
-
   // Return a successful response with a 201 status code
   const response = new ApiResponse(
     201,
@@ -76,7 +79,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid password");
   }
   // Check if the user's email is verified
-  console.log("User verification status:", user.isVerified); // Debugging line
+  console.log("User verification status:", user.isVarified); // Debugging line
 
   if (!user.isVarified) {
     // resend otp
@@ -137,7 +140,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Set secure to true in production
+    secure: true, // Set secure to true in production
   };
   // Clear cookies
   return res
@@ -190,4 +193,61 @@ const generateRefreshToken = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid RefreshToken");
   }
 });
-export { registerUser, loginUser, logoutUser, generateRefreshToken };
+
+// reset password token  
+ const forgetPasswordToken = asyncHandler(async(req, res)=>{
+  const { email } = req.body;
+  if (!email) {
+    throw new ApiError(400, "Email is required");
+  }
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+  try {
+     const token = jwt.sign({userId: user._id}, process.env.REFRESH_TOKEN_SECRET,{expiresIn:'10m'});
+      user.refreshToken= token;
+      await user.save();
+      await sendForgetPasswordMail(email, token);
+      res.json(new ApiResponse(200, "Reset password token sent to your email", null));
+  } catch (error) {
+     throw new ApiError(500, "Failed to send password reset email");
+  }
+ })
+
+// Reset password 
+ const resetPassword = asyncHandler(async(req, res)=>{
+  const { password, token } = req.body;
+  if (!password) {
+    throw new ApiError(400, "Password is required");
+  }
+
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+  } catch (error) {
+    throw new ApiError(401, "Invalid or expired token");
+  }
+  // we  have decoded user id  thts why it will decode user id  
+
+  const user = await User.findById( decodedToken.userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+  // check if token is valid and not expired  and user id is same as token's userId\
+   if(user.refreshToken!==token){
+     throw new ApiError(401, "Invalid or expired token");
+   }
+
+  try {
+    //  user.password = await user.hashPassword(password);
+     user.password=password;
+     user.refreshToken= undefined;
+     await user.save();
+     res.json(new ApiResponse(200, "Password reset successfully", null));
+  } catch (error) {
+     throw new ApiError(500, "Failed to reset password");
+  }
+ })
+ 
+export { registerUser, loginUser, logoutUser, generateRefreshToken , forgetPasswordToken , resetPassword};

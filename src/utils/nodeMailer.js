@@ -35,7 +35,7 @@ The Expense Tracker Team`, // plain text body
   // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@ethereal.email>
 }
 
-async function sendOtpMail(email,otp) {
+async function sendOtpMail(email, otp) {
   // send mail with defined transport object
   const info = await transporter.sendMail({
     from: '"Expense Tracker Application" <buiians123@gmail.com>',
@@ -60,8 +60,30 @@ async function sendOtpMail(email,otp) {
   });
 
   console.log("Message sent: %s", info.messageId);
-  // Message sent: <d786aa62-4e0a-070a-47ed-0b0666549519@ethereal.email>
+}
+async function sendForgetPasswordMail(email, token) {
+  // send mail with defined transport object
+  const info = await transporter.sendMail({
+    from: '"Expense Tracker Application" <buiians123@gmail.com>',
+    to: email,
+    subject: "OTP Verification",
+    text: `
+  Hi there,
+  
+ Please Find your Forget password Link ! 
+  to reset your password please follow the link below
+  http://localhost:3000/reset-password/${token}
+
+  This link  is valid for the next 10 minutes. If you didn't request this, please ignore this message.
+  
+  If you need any help, feel free to reach out to our support team.
+  
+  Best regards,  
+  The Expense Tracker Team
+  `,
+  });
+
+  console.log("Message sent: %s", info.messageId);
 }
 
-
-export { sendRegistrationEmail, sendOtpMail };
+export { sendRegistrationEmail, sendOtpMail, sendForgetPasswordMail };

@@ -37,7 +37,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to send verification email");
   }
 
-  res.status(200).json(new ApiResponse(200, "OTP verified successfully"));
+  res.status(200).json(new ApiResponse(200, "OTP verified successfully",[]));
   // If OTP is valid, send the email with the password reset link
 });
 export { verifyOTP };

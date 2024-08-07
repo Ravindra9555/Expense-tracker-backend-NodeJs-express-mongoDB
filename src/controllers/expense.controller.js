@@ -86,6 +86,7 @@ import logger from "../utils/looger.js";
     throw new ApiError(500, "Failed to create expense");
   }
 });
+
 // controller for generate description  
 const generateDescription= asyncHandler(async(req,res)=>{
 const {date,category,amount}=req.body;
