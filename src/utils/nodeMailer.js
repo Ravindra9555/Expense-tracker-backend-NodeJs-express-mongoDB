@@ -45,13 +45,9 @@ async function sendOtpMail(email, otp) {
   Hi there,
   
   Thank you for registering with Expense Tracker! 🎉
-  
   To complete your registration, please use the following OTP:
-  
   ${otp}
-  
   This OTP is valid for the next 10 minutes. If you didn't request this, please ignore this message.
-  
   If you need any help, feel free to reach out to our support team.
   
   Best regards,  
@@ -66,16 +62,14 @@ async function sendForgetPasswordMail(email, token) {
   const info = await transporter.sendMail({
     from: '"Expense Tracker Application" <buiians123@gmail.com>',
     to: email,
-    subject: "OTP Verification",
+    subject: "Password Reset Link ",
     text: `
   Hi there,
   
- Please Find your Forget password Link ! 
+  Please Find your Forget password Link ! 
   to reset your password please follow the link below
-  http://localhost:3000/reset-password/${token}
-
+  ${process.env.FRONTEND_BASEURL}/reset-password/${token}
   This link  is valid for the next 10 minutes. If you didn't request this, please ignore this message.
-  
   If you need any help, feel free to reach out to our support team.
   
   Best regards,  

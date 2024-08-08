@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import errorHandler from "./middlewares/errorHandler.js";
 const app = express();
+app.use(express.static("dist"));
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN,
