@@ -138,6 +138,37 @@ const promt = ` Genearte one line of description for my expense here is my In Ru
      throw new ApiError(500, "Failed to get expenses");
    }
  })
+ // Delete a particular expense of the month
+const deleteExpense = asyncHandler(async (req, res) => {
+  const { userId, month, year, expenseId } = req.body;
+
+  if (!userId || !month || !year || !expenseId) {
+    throw new ApiError(400, "userId, month, year, and expenseId are required");
+  }
+
+  // Find the expense document for the given user, month, and year
+  const expenseDoc = await Expense.findOne({ userId, month, year });
+
+  if (!expenseDoc) {
+    throw new ApiError(404, "No expense document found for the given month");
+  }
+
+  // Find the expense in the expenses array and remove it
+  const expenseIndex = expenseDoc.expenses.findIndex(
+    (expense) => expense._id.toString() === expenseId
+  );
+
+  if (expenseIndex === -1) {
+    throw new ApiError(404, "Expense not found in the document");
+  }
+
+  expenseDoc.expenses.splice(expenseIndex, 1); // Remove the expense from the array
+
+  await expenseDoc.save(); // Save the updated document
+
+  res.status(200).json(new ApiResponse(200, "Expense deleted successfully", null));
+});
+
 
  const getMonthlyExpensesByYear = asyncHandler(async (req, res, next) => {
   try {
@@ -203,4 +234,4 @@ const promt = ` Genearte one line of description for my expense here is my In Ru
   }
 });
 
-export { createExpense,getinitial,getExpensesOfMonth ,getMonthlyExpensesByYear,generateDescription};
+export { createExpense,getinitial,getExpensesOfMonth ,getMonthlyExpensesByYear,generateDescription,deleteExpense};
