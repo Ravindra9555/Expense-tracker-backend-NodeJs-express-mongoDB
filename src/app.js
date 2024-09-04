@@ -25,12 +25,15 @@ app.use(
 );
 app.use(express.static("public"));
 app.use(cookieParser());
+app.get("/",(req, res)=>{
+  res.json("API is working fine ")
+});
 
 // import routes
 import usersRoutes from "./routes/users.routes.js";
 import expesnseRoutes from "./routes/expense.routes.js";
 import verifyOtp from "./routes/otp.routes.js";
-import contact from  "./routes/contact.route.js"
+import contact from "./routes/contact.route.js";
 // apply routes
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/expenses", expesnseRoutes);
