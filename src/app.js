@@ -29,11 +29,13 @@ app.use(cookieParser());
 // import routes
 import usersRoutes from "./routes/users.routes.js";
 import expesnseRoutes from "./routes/expense.routes.js";
- import verifyOtp from "./routes/otp.routes.js";
+import verifyOtp from "./routes/otp.routes.js";
+import contact from  "./routes/contact.route.js"
 // apply routes
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/expenses", expesnseRoutes);
 app.use("/api/v1/verifyOtp", verifyOtp);
+app.use("/api/v1/contact", contact);
 
 // Error handling middleware (must be defined after all routes)
 app.use(errorHandler);

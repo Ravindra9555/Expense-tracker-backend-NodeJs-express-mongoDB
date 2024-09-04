@@ -79,5 +79,26 @@ async function sendForgetPasswordMail(email, token) {
 
   console.log("Message sent: %s", info.messageId);
 }
+ const sendConatctMail =async(name, email , subject , description )=>{
+ try {
+   const info = await transporter.sendMail({
+     from: '"Expense Tracker Application" <buiians123@gmail.com>',
+     to: email,
+     subject: subject,
+     text: `
+   Hi there,
+    Here there is a query from ${name},
+    Subject : ${subject}
+    Description : ${description}
+   `,
+   });
+   
+   console.log("Message sent: %s", info.messageId);
+   return true;
+ } catch (error) {
+   console.error(`Error sending email to ${email}: ${error.message}`);
+   return false;
+ }
 
-export { sendRegistrationEmail, sendOtpMail, sendForgetPasswordMail };
+ }
+export { sendRegistrationEmail, sendOtpMail, sendForgetPasswordMail, sendConatctMail };

@@ -206,7 +206,7 @@ const generateRefreshToken = asyncHandler(async (req, res) => {
   }
   try {
      const token = jwt.sign({userId: user._id}, process.env.REFRESH_TOKEN_SECRET,{expiresIn:'10m'});
-      user.refreshToken= token;
+      user.refreshToken = token;
       await user.save();
       await sendForgetPasswordMail(email, token);
       res.json(new ApiResponse(200, "Reset password token sent to your email", null));
