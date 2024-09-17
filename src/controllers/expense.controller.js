@@ -95,7 +95,7 @@ const {date,category,amount}=req.body;
  }
 const GenAI=  new GoogleGenerativeAI(process.env.GENAI_TOKEN);
 const modal = GenAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-const promt = ` Genearte one line of description for my expense here is my In Rupees ${amount} , Type is '${category}', date is '${date}' , descriptionshould not be more than one line` ; 
+const promt = ` Genearte 2 line of description for my expense here is my In Rupees ${amount} , Type is '${category}', date is '${date}' , descriptionshould not be more than 2 line` ; 
 
  const result = await modal.generateContent(promt);
  if(result.error){
