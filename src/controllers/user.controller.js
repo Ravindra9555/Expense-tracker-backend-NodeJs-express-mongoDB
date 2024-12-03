@@ -37,7 +37,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   // send mail with defined transport object
-  const sendmail =await sendOtpMail(user.email, otp);
+  const sendmail = await sendOtpMail(user.email, otp);
 
   if(!sendmail){
     throw new ApiError(500, "Unable to send OTP ! please try after  some time ! ")
@@ -248,7 +248,33 @@ const generateRefreshToken = asyncHandler(async (req, res) => {
   } catch (error) {
      throw new ApiError(500, "Failed to reset password");
   }
- })
+ });
+ const changePassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword, userId } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    throw new ApiError(400, "Old password and new password are required");
+  }
+
+  const user = await User.findById(userId); // Fetch the user
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const isMatch = await user.isPasswordMatch(oldPassword);
+  if (!isMatch) {
+    throw new ApiError(401, "Invalid old password");
+  }
+
+  try {
+    user.password = newPassword; // Assign the new password
+    await user.save(); // Save the updated user (pre-save hook hashes the password)
+
+    res.json(new ApiResponse(200, "Password changed successfully", null));
+  } catch (error) {
+    throw new ApiError(500, "Failed to change password");
+  }
+});
+
  
- 
-export { registerUser, loginUser, logoutUser, generateRefreshToken , forgetPasswordToken , resetPassword};
+export { registerUser, loginUser, logoutUser, generateRefreshToken , forgetPasswordToken , resetPassword, changePassword};
