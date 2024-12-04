@@ -24,25 +24,6 @@ const registerUser = asyncHandler(async (req, res) => {
   // Create a new user
   const user = await User.create({ email, password });
 
-  // generate otp
-  const otp = Math.floor(100000 + Math.random() * 900000);
-  console.log("Generated OTP: ", otp);
-
-  // store otp to otp model
-
-  await OTP.create({
-    email: user.email,
-    otpType: "signup",
-    otp: otp,
-  });
-
-  // send mail with defined transport object
-  const sendmail = await sendOtpMail(user.email, otp);
-
-  if(!sendmail){
-    throw new ApiError(500, "Unable to send OTP ! please try after  some time ! ")
-  }
-
   // Fetch the created user excluding sensitive information
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
@@ -54,7 +35,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // Return a successful response with a 201 status code
   const response = new ApiResponse(
     201,
-    "Verification OTP send to your email ",
+    "User Registred successfully",
     createdUser
   );
 
@@ -78,25 +59,27 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!isMatch) {
     throw new ApiError(401, "Invalid password");
   }
+
   // Check if the user's email is verified
   console.log("User verification status:", user.isVarified); // Debugging line
 
   if (!user.isVarified) {
-    // resend otp
     const otp = Math.floor(100000 + Math.random() * 900000);
     console.log("Generated OTP: ", otp);
-    const isSend = await OTP.create({
-      email: user.email,
-      otpType: "signup",
-      otp: otp,
-    });
 
-    if (!isSend) {
-      throw new ApiError(500, "Failed to send verification email");
+    try {
+      await OTP.create({
+        email: user.email,
+        otpType: "signup",
+        otp: otp,
+      });
+      await sendOtpMail(user.email, otp);
+    } catch (error) {
+      console.error("Error during OTP or email sending:", error.message);
+      throw new ApiError(500, "Failed to handle email verification process");
     }
-    await sendOtpMail(user.email, otp);
 
-    throw new ApiError(403, "Email not verified");
+    throw new ApiError(403, "Email not verified. Please verify your email.");
   }
 
   const { accessToken, refreshToken } =
@@ -166,9 +149,12 @@ const generateRefreshToken = asyncHandler(async (req, res) => {
       console.log(`${decodedToken._id} OOKJJKHRFGHRTG`);
     }
     const user = await User.findById(decodedToken._id);
-    if (!user) {
-      throw new ApiError(401, "Invalid RefreshToken");
-    }
+    console.log(user)
+    
+    // if (!user) {
+    //   throw new ApiError(401, "Invalid RefreshToken");
+    // }
+
 
     if (user?.refreshToken != incommingRefreshToken) {
       throw new ApiError(401, "Invalid RefreshToken Login again");
@@ -177,16 +163,17 @@ const generateRefreshToken = asyncHandler(async (req, res) => {
       httpOnly: true,
       secure: true,
     };
-    const { accessToken, newrefreshToken } =
+    const { accessToken, refreshToken } =
       await generateAccessTokenAndRefreshToken(user._id);
     return res
       .status(200)
       .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", newrefreshToken, options)
+      .cookie("refreshToken", refreshToken, options)
       .json(
         new ApiResponse(200, "User verifed  succesfully", {
+          user,
           accessToken: accessToken,
-          refreshToken: newrefreshToken,
+          refreshToken: refreshToken,
         })
       );
   } catch (error) {
@@ -209,7 +196,7 @@ const generateRefreshToken = asyncHandler(async (req, res) => {
       user.refreshToken = token;
       await user.save();
       await sendForgetPasswordMail(email, token);
-      res.json(new ApiResponse(200, "Reset password token sent to your email", null));
+      res.status(200).json(new ApiResponse(200, "Reset password token sent to your email", null));
   } catch (error) {
      throw new ApiError(500, "Failed to send password reset email");
   }
@@ -225,6 +212,7 @@ const generateRefreshToken = asyncHandler(async (req, res) => {
   let decodedToken;
   try {
     decodedToken = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+
   } catch (error) {
     throw new ApiError(401, "Invalid or expired token");
   }
